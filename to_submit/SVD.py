@@ -111,7 +111,7 @@ def visualize_read_mapping(read1, is_read1_inv, read1_idx, read1_score, read2, i
     else:
         print(' '*read2_idx + read2[::-1] + ' /IR2 /T=' + type + ' /S=' + str(read2_score))
 
-def get_reads_maping_data(reads):
+def get_reads_maping_data(reads, ref):
     data_list = [] 
     space_list = []
     for line in reads:
@@ -136,7 +136,7 @@ def get_reads_maping_data(reads):
         data_list.append([ (read1,is_read1_inv,read1_idx,read1_score) , (read2,is_read2_inv,read2_idx,read2_score) ])
     return data_list, max(set(space_list), key=space_list.count) #normal length space
 
-def get_type_count(data_list, normal_space):
+def get_type_count(data_list, normal_space, ref):
     type_count = {"B":0,"I":0,"S":0,"L":0,"M":0,"R1":0,"R2":0,"L1":0,"L2":0,"U":0}
     breakpoint = {"R":[], "L":[]}
     for (data_read1, data_read2) in data_list:
@@ -157,7 +157,7 @@ def get_type_count(data_list, normal_space):
         print(breakpoint)
     return (type_count, breakpoint)
 
-def get_SV(type_count, breakpoint):
+def get_SV(type_count, breakpoint, ref):
     breakpoint_R = max(set(breakpoint["R"]), key=breakpoint["R"].count, default=len(ref))
     breakpoint_L = max(set(breakpoint["L"]), key=breakpoint["L"].count, default=len(ref))
 
@@ -186,6 +186,6 @@ def get_SV(type_count, breakpoint):
 
 if (DEBUG_MODE):
     print(ref)
-data_list, normal_space = get_reads_maping_data(reads)
-type_count, breakpoint = get_type_count(data_list, normal_space)
-print(get_SV(type_count, breakpoint))
+data_list, normal_space = get_reads_maping_data(reads, ref)
+type_count, breakpoint = get_type_count(data_list, normal_space, ref)
+print(get_SV(type_count, breakpoint, ref))
