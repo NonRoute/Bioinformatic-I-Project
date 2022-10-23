@@ -1,7 +1,7 @@
 # edit file path
 REF = 'ref.txt'
 READ = 'read.txt'
-DEBUG_MODE = True #True/False
+DEBUG_MODE = False #True/False
 
 with open(REF) as f:
     ref = f.read().splitlines()[0]
@@ -102,15 +102,14 @@ def get_mapping_type(read1, read1_idx, is_read1_inv, read2, read2_idx, is_read2_
     return "U"
 
 def visualize_read_mapping(read1, is_read1_inv, read1_idx, read1_score, read2, is_read2_inv, read2_idx, read2_score, type):
-    if (type != "M"):
-        if not is_read1_inv:
-            print(' '*read1_idx + read1 + ' /R1 /T=' + type + ' /S=' + str(read1_score))
-        else:
-            print(' '*read1_idx + read1[::-1] + ' /IR1 /T=' + type + ' /S=' + str(read1_score))
-        if not is_read2_inv:
-            print(' '*read2_idx + read2 + ' /R2 /T=' + type + ' /S=' + str(read2_score))
-        else:
-            print(' '*read2_idx + read2[::-1] + ' /IR2 /T=' + type + ' /S=' + str(read2_score))
+    if not is_read1_inv:
+        print(' '*read1_idx + read1 + ' /R1 /T=' + type + ' /S=' + str(read1_score))
+    else:
+        print(' '*read1_idx + read1[::-1] + ' /IR1 /T=' + type + ' /S=' + str(read1_score))
+    if not is_read2_inv:
+        print(' '*read2_idx + read2 + ' /R2 /T=' + type + ' /S=' + str(read2_score))
+    else:
+        print(' '*read2_idx + read2[::-1] + ' /IR2 /T=' + type + ' /S=' + str(read2_score))
 
 def get_reads_maping_data(reads):
     data_list = [] 
