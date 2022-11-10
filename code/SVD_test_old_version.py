@@ -1,7 +1,6 @@
 DEBUG_MODE = False
 
 def get_score(read, ref_part):
-    # calculate score for 1 read and 1 position of ref 
     score = 0
     for i in range(len(ref_part)):
         if read[i] == ref_part[i]:
@@ -9,16 +8,12 @@ def get_score(read, ref_part):
     return score
 
 def read_mapping(read, ref):
-    # perform read_mapping for 1 read
     max_score, best_idx = (-1, -1)
     for i in range(len(ref) - len(read) + 1):
         score = get_score(read, ref[i:i+len(read)])
         if score > max_score:
             max_score = score
             best_idx = i
-        if max_score >= 0.8*len(read):
-            # max_score good enough
-            return (max_score, best_idx)
     return (max_score, best_idx)
 
 def get_percent_match(read, ref_part, is_read_inv):
@@ -51,15 +46,17 @@ def get_mapping_type(read1, read1_idx, is_read1_inv, read2, read2_idx, is_read2_
     read1 reverse = [  r >
     read2 = <    ]
     read2 reverse = <  r ]
-    normal distance between read1 and read2 = ---
-    short distance between read1 and read2 = -
-    long distance between read1 and read2 = ------
+    normal length space between read1 and read2 = ---
+    short length space between read1 and read2 = -
+    long length space between read1 and read2 = ------
+    any length space between read1 and read2 = -?-
     mapped = <    ]
     soft-clipped = <  ##]
     unmapped = <####]
+    any = <  ? ]
 
     type:
-    B  = <    ]-?-[    > 
+    B  = <    ]-?-[    >
     I  = [  r >-?-<  r ] || [    >-?-<  r ] || [  r >-?-<   ]
     S  = [    >-<    ]
     L  = [    >------<    ]
@@ -72,29 +69,29 @@ def get_mapping_type(read1, read1_idx, is_read1_inv, read2, read2_idx, is_read2_
     '''
     p1 = get_percent_match(read1,ref[read1_idx:read1_idx+len(read1)],is_read1_inv)
     p2 = get_percent_match(read2,ref[read2_idx:read2_idx+len(read2)],is_read2_inv)
-    MAPPED_THRESHOLD = 0.85
-    UNMAPPED_THRESHOLD = 0.6
+    mapped_threshold = 0.85
+    unmapped_threshold = 0.6
 
-    if (p1 >= UNMAPPED_THRESHOLD or p2 >= UNMAPPED_THRESHOLD):
+    if (p1 >= unmapped_threshold or p2 >= unmapped_threshold):
         if (read2_idx <= read1_idx):
-            return "B" # Read2 before Read1
+            return "B"
         if (is_read1_inv or is_read2_inv):
-            return "I" # Inversion
+            return "I"
         if (read2_idx - read1_idx < len(read1) + normal_space):
-            return "S" # Short
+            return "S"
         if (read2_idx - read1_idx > len(read1) + normal_space):
-            return "L" # Long
-        if (p1 >= MAPPED_THRESHOLD and p2 >= MAPPED_THRESHOLD):
-            return "M" # Mapped
-        if (p1 >= MAPPED_THRESHOLD and p2 >= UNMAPPED_THRESHOLD):
+            return "L"
+        if (p1 >= mapped_threshold and p2 >= mapped_threshold):
+            return "M"
+        if (p1 >= mapped_threshold and p2 >= unmapped_threshold):
             return "R1"
-        if (p1 >= MAPPED_THRESHOLD and p2 < UNMAPPED_THRESHOLD):
+        if (p1 >= mapped_threshold and p2 < unmapped_threshold):
             return "R2"
-        if (p1 >= UNMAPPED_THRESHOLD and p2 >= MAPPED_THRESHOLD):
+        if (p1 >= unmapped_threshold and p2 >= mapped_threshold):
             return "L1"
-        if (p1 < UNMAPPED_THRESHOLD and p2 >= MAPPED_THRESHOLD):
+        if (p1 < unmapped_threshold and p2 >= mapped_threshold):
             return "L2"
-    return "U" # Unmapped
+    return "U"
 
 def visualize_read_mapping(read1, is_read1_inv, read1_idx, read1_score, read2, is_read2_inv, read2_idx, read2_score, type):
     if not is_read1_inv:
@@ -107,8 +104,8 @@ def visualize_read_mapping(read1, is_read1_inv, read1_idx, read1_score, read2, i
         print(' '*read2_idx + read2[::-1] + ' /IR2 /T=' + type + ' /S=' + str(read2_score))
 
 def get_reads_maping_data(reads, ref):
-    data_list = [] # list of [ (read1,is_read1_inv,read1_idx,read1_score) , (read2,is_read2_inv,read2_idx,read2_score) ]
-    space_list = [] # list of distance between read1 and read 2
+    data_list = [] 
+    space_list = []
     for line in reads:
         read1, read2 = line.split(',')
 
@@ -126,17 +123,14 @@ def get_reads_maping_data(reads, ref):
         read1_score = read1_inv_map[0] if (read1_inv_map[0] > read1_map[0]) else read1_map[0]
         read2_score = read2_inv_map[0] if (read2_inv_map[0] > read2_map[0]) else read2_map[0]
 
-        # calculate distance (space) between read1 and read 2 
         space = read2_idx - read1_idx - len(read1)
         space_list.append(space)
         data_list.append([ (read1,is_read1_inv,read1_idx,read1_score) , (read2,is_read2_inv,read2_idx,read2_score) ])
-    return data_list, max(set(space_list), key=space_list.count) #normal distance = the most frequent number
+    return data_list, max(set(space_list), key=space_list.count) #normal length space
 
 def get_type_count(data_list, normal_space, ref):
-    # find and count type from every reads
     type_count = {"B":0,"I":0,"S":0,"L":0,"M":0,"R1":0,"R2":0,"L1":0,"L2":0,"U":0}
     breakpoint = {"R":[], "L":[]}
-
     for (data_read1, data_read2) in data_list:
         read1, is_read1_inv, read1_idx, read1_score = data_read1[0], data_read1[1], data_read1[2], data_read1[3]
         read2, is_read2_inv, read2_idx, read2_score = data_read2[0], data_read2[1], data_read2[2], data_read2[3]
@@ -156,40 +150,28 @@ def get_type_count(data_list, normal_space, ref):
     return (type_count, breakpoint)
 
 def get_SV(type_count, breakpoint, ref):
-    # find SV from type_count and breakpoint
-    if (len(breakpoint["R"]) == len(set(breakpoint["R"]))): # Is not dupe
-        if (len(breakpoint["R"]) == 0):
-            breakpoint_R = len(ref)
-        else:
-            breakpoint_R = sorted(breakpoint["R"])[(len(breakpoint["R"])-1)//2] # medium
-    else:
-        breakpoint_R = max(set(breakpoint["R"]), key=breakpoint["R"].count, default=len(ref)) # mode
-    if (len(breakpoint["L"]) == len(set(breakpoint["L"]))): # Is not dupe
-        if (len(breakpoint["L"]) == 0):
-            breakpoint_L = len(ref)
-        else:
-            breakpoint_L = sorted(breakpoint["L"])[(len(breakpoint["L"])-1)//2] # medium
-    else:
-        breakpoint_L = max(set(breakpoint["L"]), key=breakpoint["L"].count, default=len(ref)) #mode
-    sum_SLBI = type_count["S"]+type_count["L"]+type_count["B"]+type_count["I"]
+    breakpoint_R = max(set(breakpoint["R"]), key=breakpoint["R"].count, default=len(ref))
+    breakpoint_L = max(set(breakpoint["L"]), key=breakpoint["L"].count, default=len(ref))
 
-    if (DEBUG_MODE):
-        print("breakpoint R, L, sum_SLBI =", breakpoint_R, breakpoint_L, sum_SLBI)
+    sum_SLBI = type_count["S"]+type_count["L"]+type_count["B"]+type_count["I"]
     
-    if (len(breakpoint["R"]) < len(breakpoint["L"])*0.1 or len(breakpoint["R"])*0.1 > len(breakpoint["L"])):
-        if (len(breakpoint["R"]) < len(breakpoint["L"])*0.1):
+    if (type_count["L"] > sum_SLBI*0.8 and breakpoint_L > breakpoint_R):
+        return "Deletion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
+    elif (type_count["I"] > sum_SLBI*0.8 and breakpoint_L > breakpoint_R):
+        return "Inversion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
+    elif (type_count["B"] > sum_SLBI*0.8 and breakpoint_R > breakpoint_L):
+        return "Tandem duplication from index " + str(breakpoint_L) + " to " + str(breakpoint_R)
+
+    if (len(breakpoint["R"]) == 0 or len(breakpoint["L"]) == 0):
+        if (len(breakpoint["R"]) == 0):
             return "Chromosomal translocation from index " + str(breakpoint_L)
         else:
             return "Chromosomal translocation from index " + str(breakpoint_R)
 
-    if (type_count["L"] > sum_SLBI*0.55):
-        return "Deletion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
-    if (type_count["I"] > sum_SLBI*0.4):
-        return "Inversion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
-    if (type_count["B"] > sum_SLBI*0.55):
-        return "Tandem duplication from index " + str(breakpoint_L) + " to " + str(breakpoint_R)
+    if (abs(breakpoint_R-breakpoint_L) <= 2):
+        if (type_count["S"] > sum_SLBI*0.8):
+            return "Insertion (length < insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
+        else:
+            return "Insertion (length >= insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
 
-    if (type_count["S"] > sum_SLBI*0.55):
-        return "Insertion (length < insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
-    else:
-        return "Insertion (length >= insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
+    return "Unknown SV"
