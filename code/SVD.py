@@ -167,20 +167,20 @@ def get_type_count(data_list, normal_space, ref):
 
 def get_SV(type_count, breakpoint, ref):
     # find SV from type_count and breakpoint
-    if (len(breakpoint["R"]) == len(set(breakpoint["R"]))): # Is not dupe
+    if (len(breakpoint["R"]) == len(set(breakpoint["R"]))): # not dupe
         if (len(breakpoint["R"]) == 0):
             breakpoint_R = len(ref)
         else:
             breakpoint_R = sorted(breakpoint["R"])[(len(breakpoint["R"])-1)//2] # medium
     else:
         breakpoint_R = max(set(breakpoint["R"]), key=breakpoint["R"].count, default=len(ref)) # mode
-    if (len(breakpoint["L"]) == len(set(breakpoint["L"]))): # Is not dupe
+    if (len(breakpoint["L"]) == len(set(breakpoint["L"]))): # not dupe
         if (len(breakpoint["L"]) == 0):
             breakpoint_L = len(ref)
         else:
             breakpoint_L = sorted(breakpoint["L"])[(len(breakpoint["L"])-1)//2] # medium
     else:
-        breakpoint_L = max(set(breakpoint["L"]), key=breakpoint["L"].count, default=len(ref)) #mode
+        breakpoint_L = max(set(breakpoint["L"]), key=breakpoint["L"].count, default=len(ref)) # mode
     sum_SLBI = type_count["S"]+type_count["L"]+type_count["B"]+type_count["I"]
 
     if (DEBUG_MODE):
