@@ -1,3 +1,4 @@
+from variance_type import VarianceType
 DEBUG_MODE = False
 
 def get_score(read, ref_part):
@@ -155,7 +156,9 @@ def get_type_count(data_list, normal_space, ref):
         print(breakpoint)
     return (type_count, breakpoint)
 
-def get_SV(type_count, breakpoint, ref):
+def get_SV(reads, ref) -> tuple[VarianceType, int, int]:
+    data_list, normal_space = get_reads_maping_data(reads, ref)
+    type_count, breakpoint = get_type_count(data_list, normal_space, ref)
     # find SV from type_count and breakpoint
     if (len(breakpoint["R"]) == len(set(breakpoint["R"]))): # Is not dupe
         if (len(breakpoint["R"]) == 0):
@@ -178,18 +181,18 @@ def get_SV(type_count, breakpoint, ref):
     
     if (len(breakpoint["R"]) < len(breakpoint["L"])*0.1 or len(breakpoint["R"])*0.1 > len(breakpoint["L"])):
         if (len(breakpoint["R"]) < len(breakpoint["L"])*0.1):
-            return "Chromosomal translocation from index " + str(breakpoint_L)
+            return VarianceType.TRANSLOCATION, breakpoint_L, 0
         else:
-            return "Chromosomal translocation from index " + str(breakpoint_R)
+            return VarianceType.TRANSLOCATION, breakpoint_R, 0
 
     if (type_count["L"] > sum_SLBI*0.55):
-        return "Deletion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
+        return VarianceType.DELETION, breakpoint_R, breakpoint_L
     if (type_count["I"] > sum_SLBI*0.4):
-        return "Inversion from index " + str(breakpoint_R) + " to " + str(breakpoint_L)
+        return VarianceType.INVERSION, breakpoint_R, breakpoint_L
     if (type_count["B"] > sum_SLBI*0.55):
-        return "Tandem duplication from index " + str(breakpoint_L) + " to " + str(breakpoint_R)
+        return VarianceType.TANDEM, breakpoint_L, breakpoint_R
 
     if (type_count["S"] > sum_SLBI*0.55):
-        return "Insertion (length < insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
+        return VarianceType.INSERTION_BIGGER, min(breakpoint_L, breakpoint_R), max(breakpoint_L, breakpoint_R)
     else:
-        return "Insertion (length >= insert size) between index " + str(breakpoint_L) + " and " + str(breakpoint_R)
+        return VarianceType.INSERTION_SMALLER, min(breakpoint_L, breakpoint_R), max(breakpoint_L, breakpoint_R)
